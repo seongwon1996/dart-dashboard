@@ -15,6 +15,15 @@
     --accent: #2563eb;
     --accent-hover: #1d4ed8;
     --error: #dc2626;
+    --grid: #e1e0d9;
+    --baseline: #c3c2b7;
+    --tooltip-bg: #1a1a1e;
+    --tooltip-text: #ffffff;
+    --series-1: #2a78d6;
+    --series-2: #1baf7a;
+    --series-3: #eda100;
+    --series-4: #008300;
+    --series-5: #4a3aa7;
   }
   @media (prefers-color-scheme: dark) {
     :root {
@@ -25,6 +34,15 @@
       --muted: #9a9aa2;
       --accent: #3b82f6;
       --accent-hover: #60a5fa;
+      --grid: #2c2c2a;
+      --baseline: #45453f;
+      --tooltip-bg: #f2f2f3;
+      --tooltip-text: #1a1a1e;
+      --series-1: #3987e5;
+      --series-2: #199e70;
+      --series-3: #c98500;
+      --series-4: #008300;
+      --series-5: #9085e9;
     }
   }
   * { box-sizing: border-box; }
@@ -34,8 +52,9 @@
     background: var(--bg);
     color: var(--text);
     display: flex;
-    justify-content: center;
-    padding: 40px 16px;
+    flex-direction: column;
+    align-items: center;
+    padding: 40px 16px 80px;
   }
   .card {
     width: 100%;
@@ -104,12 +123,109 @@
   .status.error { color: var(--error); }
   .status.info { color: var(--muted); }
   .hint { font-size: 0.78rem; color: var(--muted); margin-top: 4px; }
+
+  /* 결과 섹션 */
+  .results { width: 100%; max-width: 1040px; margin-top: 28px; display: none; }
+  .results.visible { display: block; }
+  .results-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 28px 32px;
+    margin-bottom: 20px;
+  }
+  .results h2 { font-size: 1.1rem; margin: 0 0 4px; }
+  .results h3 { font-size: 0.95rem; margin: 24px 0 2px; }
+  .results .section-hint { color: var(--muted); font-size: 0.8rem; margin: 0 0 14px; }
+
+  .legend { display: flex; flex-wrap: wrap; gap: 16px; margin: 14px 0 6px; }
+  .legend-item { display: flex; align-items: center; gap: 7px; font-size: 0.85rem; }
+  .legend-swatch { width: 12px; height: 12px; border-radius: 3px; flex: none; }
+
+  .table-scroll { overflow-x: auto; margin-bottom: 8px; border: 1px solid var(--border); border-radius: 8px; }
+  table { border-collapse: collapse; width: 100%; font-size: 0.82rem; font-variant-numeric: tabular-nums; }
+  thead th {
+    background: var(--bg);
+    color: var(--muted);
+    font-weight: 700;
+    font-size: 0.74rem;
+    padding: 8px 12px;
+    text-align: right;
+    white-space: nowrap;
+    border-bottom: 1px solid var(--border);
+    position: sticky; top: 0;
+  }
+  tbody td {
+    padding: 7px 12px;
+    text-align: right;
+    white-space: nowrap;
+    border-bottom: 1px solid var(--border);
+  }
+  thead th:first-child, tbody td:first-child {
+    text-align: left;
+    font-weight: 600;
+    position: sticky;
+    left: 0;
+    background: var(--card);
+  }
+  thead th:first-child { background: var(--bg); }
+  tbody tr:last-child td { border-bottom: none; }
+
+  .chart-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 16px;
+    margin-top: 12px;
+  }
+  .chart-card {
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 14px 10px;
+  }
+  .chart-card h4 { margin: 0 0 6px; font-size: 0.84rem; font-weight: 700; }
+  svg.chart { width: 100%; height: auto; display: block; overflow: visible; }
+  .gridline { stroke: var(--grid); stroke-width: 1; }
+  .baseline { stroke: var(--baseline); stroke-width: 1; }
+  .axis-label { fill: var(--muted); font-size: 9px; }
+  .bar-hit-area { fill: transparent; pointer-events: all; cursor: pointer; }
+  .bar-hit-area:focus { outline: none; }
+  .bar-fill { pointer-events: none; transition: opacity 0.1s; }
+  .bar-hit-area:hover .bar-fill, .bar-hit-area:focus .bar-fill { opacity: 0.78; }
+
+  .series-0 { --series-color: var(--series-1); }
+  .series-1 { --series-color: var(--series-2); }
+  .series-2 { --series-color: var(--series-3); }
+  .series-3 { --series-color: var(--series-4); }
+  .series-4 { --series-color: var(--series-5); }
+  .bar-fill { fill: var(--series-color); }
+  .legend-swatch { background: var(--series-color); }
+
+  .chart-tooltip {
+    position: fixed;
+    pointer-events: none;
+    background: var(--tooltip-bg);
+    color: var(--tooltip-text);
+    padding: 7px 11px;
+    border-radius: 6px;
+    font-size: 0.78rem;
+    line-height: 1.5;
+    opacity: 0;
+    transform: translate(-50%, -100%);
+    transition: opacity 0.1s;
+    z-index: 100;
+    white-space: nowrap;
+  }
+  .chart-tooltip.visible { opacity: 1; }
+  .chart-tooltip strong { font-size: 0.88rem; }
+
+  .export-row { display: flex; justify-content: flex-end; margin-top: 4px; }
+  .export-row button { width: auto; padding: 10px 22px; margin-top: 0; }
 </style>
 </head>
 <body>
 <div class="card">
   <h1>재무제표 비교</h1>
-  <p class="subtitle">국내 상장사 2~5곳을 검색해 최근 재무제표를 비교하고 엑셀로 받아보세요. (DART 전자공시 기준)</p>
+  <p class="subtitle">국내 상장사 2~5곳을 검색해 최근 재무제표를 비교해보세요. (DART 전자공시 기준)</p>
 
   <form id="compare-form">
     <div class="field-group">
@@ -123,20 +239,57 @@
       <div class="hint">사업보고서 제출 시점(익년 3월 말) 기준으로 최근 완결된 3개년이 기본값입니다.</div>
     </div>
 
-    <button type="submit" id="submit-btn">엑셀 다운로드</button>
+    <button type="submit" id="submit-btn">비교하기</button>
     <div class="status" id="status"></div>
   </form>
 </div>
 
+<div class="results" id="results">
+  <div class="results-card">
+    <h2>비교 결과</h2>
+    <div class="legend" id="legend"></div>
+    <div class="table-scroll"><table id="accounts-table"></table></div>
+
+    <h3>손익 비교</h3>
+    <p class="section-hint">매출액 · 영업이익 · 당기순이익 (연도별)</p>
+    <div class="chart-grid" id="charts-profit"></div>
+
+    <h3>재무비율 비교</h3>
+    <p class="section-hint">영업이익률 · 순이익률 · 부채비율 · ROE (%)</p>
+    <div class="chart-grid" id="charts-ratio"></div>
+
+    <div class="table-scroll" style="margin-top:20px"><table id="ratio-table"></table></div>
+
+    <div class="export-row">
+      <button type="button" id="export-btn">엑셀 다운로드</button>
+    </div>
+    <div class="status" id="export-status"></div>
+  </div>
+</div>
+
+<div class="chart-tooltip" id="chart-tooltip" role="status" aria-live="polite"></div>
+
 <script>
+const SVG_NS = 'http://www.w3.org/2000/svg';
 const COMPANY_COUNT = 3;
+const ACCOUNTS = ['매출액', '영업이익', '당기순이익', '자산총계', '부채총계', '자본총계'];
+const RATIOS = ['영업이익률(%)', '순이익률(%)', '부채비율(%)', 'ROE(%)'];
+
 const companiesContainer = document.getElementById('company-inputs');
 const yearsRow = document.getElementById('years-row');
 const statusEl = document.getElementById('status');
 const submitBtn = document.getElementById('submit-btn');
+const resultsEl = document.getElementById('results');
+const legendEl = document.getElementById('legend');
+const tooltipEl = document.getElementById('chart-tooltip');
+const exportBtn = document.getElementById('export-btn');
+const exportStatusEl = document.getElementById('export-status');
 
 let corpList = [];
 const selected = new Array(COMPANY_COUNT).fill(null);
+let lastResult = null; // { companies, years } - /api/compare 응답, 엑셀 내보내기에 재사용
+
+/* ---------- 검색 폼 (기존) ---------- */
 
 function defaultYears() {
   const today = new Date();
@@ -165,7 +318,13 @@ function buildCompanyRow(index) {
     matches.forEach(m => {
       const item = document.createElement('div');
       item.className = 'dropdown-item';
-      item.innerHTML = `<span>${m.corp_name}</span><span class="code">${m.stock_code}</span>`;
+      const nameSpan = document.createElement('span');
+      nameSpan.textContent = m.corp_name;
+      const codeSpan = document.createElement('span');
+      codeSpan.className = 'code';
+      codeSpan.textContent = m.stock_code;
+      item.appendChild(nameSpan);
+      item.appendChild(codeSpan);
       item.addEventListener('mousedown', (e) => {
         e.preventDefault();
         input.value = m.corp_name;
@@ -209,6 +368,301 @@ fetch('/data/corp_codes.json')
   .then(data => { corpList = data; })
   .catch(() => setStatus('회사 목록을 불러오지 못했습니다. 새로고침해주세요.', 'error'));
 
+/* ---------- 숫자 포맷 ---------- */
+
+function formatWon(raw) {
+  if (raw === null || raw === undefined) return '-';
+  const sign = raw < 0 ? '-' : '';
+  const abs = Math.abs(raw);
+  const jo = Math.floor(abs / 1e12);
+  const eok = Math.floor((abs % 1e12) / 1e8);
+  if (jo > 0) return eok > 0 ? `${sign}${jo}조 ${eok.toLocaleString('ko-KR')}억원` : `${sign}${jo}조원`;
+  if (eok > 0) return `${sign}${eok.toLocaleString('ko-KR')}억원`;
+  const man = Math.round(abs / 1e4);
+  if (man > 0) return `${sign}${man.toLocaleString('ko-KR')}만원`;
+  return `${sign}${Math.round(abs).toLocaleString('ko-KR')}원`;
+}
+
+function formatWonAxis(raw) {
+  if (raw === 0) return '0';
+  const abs = Math.abs(raw);
+  const sign = raw < 0 ? '-' : '';
+  if (abs >= 1e12) return `${sign}${(abs / 1e12).toFixed(1).replace(/\.0$/, '')}조`;
+  if (abs >= 1e8) return `${sign}${Math.round(abs / 1e8)}억`;
+  if (abs >= 1e4) return `${sign}${Math.round(abs / 1e4)}만`;
+  return `${sign}${Math.round(abs)}`;
+}
+
+function formatPercent(v) {
+  if (v === null || v === undefined) return '-';
+  return `${v.toFixed(2)}%`;
+}
+
+function niceMax(max) {
+  if (max <= 0) return 1;
+  const exp = Math.floor(Math.log10(max));
+  const base = Math.pow(10, exp);
+  const frac = max / base;
+  let niceFrac = 10;
+  if (frac <= 1) niceFrac = 1;
+  else if (frac <= 2) niceFrac = 2;
+  else if (frac <= 5) niceFrac = 5;
+  return niceFrac * base;
+}
+
+/* ---------- 범례 ---------- */
+
+function buildLegend(companies) {
+  legendEl.innerHTML = '';
+  companies.forEach((c, i) => {
+    const item = document.createElement('div');
+    item.className = 'legend-item';
+    const swatch = document.createElement('span');
+    swatch.className = `legend-swatch series-${i}`;
+    const label = document.createElement('span');
+    label.textContent = c.name;
+    item.appendChild(swatch);
+    item.appendChild(label);
+    legendEl.appendChild(item);
+  });
+}
+
+/* ---------- 표 ---------- */
+
+function buildTable(tableEl, companies, years, rowNames, getValue, formatter) {
+  tableEl.innerHTML = '';
+  const thead = document.createElement('thead');
+  const headRow = document.createElement('tr');
+  const firstTh = document.createElement('th');
+  firstTh.textContent = '계정';
+  headRow.appendChild(firstTh);
+  companies.forEach(c => years.forEach(y => {
+    const th = document.createElement('th');
+    th.textContent = `${c.name} ${y}`;
+    headRow.appendChild(th);
+  }));
+  thead.appendChild(headRow);
+  tableEl.appendChild(thead);
+
+  const tbody = document.createElement('tbody');
+  rowNames.forEach(rowName => {
+    const tr = document.createElement('tr');
+    const th = document.createElement('td');
+    th.textContent = rowName;
+    tr.appendChild(th);
+    companies.forEach((c, ci) => years.forEach(y => {
+      const td = document.createElement('td');
+      td.textContent = formatter(getValue(ci, c, y, rowName));
+      tr.appendChild(td);
+    }));
+    tbody.appendChild(tr);
+  });
+  tableEl.appendChild(tbody);
+}
+
+/* ---------- 차트 (순수 SVG, 그룹형 막대) ---------- */
+
+function showTooltip(target, html) {
+  tooltipEl.innerHTML = html;
+  const rect = target.getBoundingClientRect();
+  tooltipEl.style.left = `${rect.left + rect.width / 2}px`;
+  tooltipEl.style.top = `${rect.top - 8}px`;
+  tooltipEl.classList.add('visible');
+}
+
+function hideTooltip() {
+  tooltipEl.classList.remove('visible');
+}
+
+function createBarChart({ title, years, companies, getValue, axisFormatter, tooltipFormatter }) {
+  const W = 440, H = 190;
+  const marginLeft = 46, marginRight = 8, marginTop = 12, marginBottom = 24;
+  const plotW = W - marginLeft - marginRight;
+  const plotH = H - marginTop - marginBottom;
+
+  let max = 0, min = 0;
+  years.forEach(y => companies.forEach((c, ci) => {
+    const v = getValue(ci, y);
+    if (v !== null && v !== undefined) {
+      if (v > max) max = v;
+      if (v < min) min = v;
+    }
+  }));
+  const positiveMax = niceMax(Math.max(max, 0) || 1);
+  const negativeMax = min < 0 ? niceMax(Math.abs(min)) : 0;
+  const totalRange = positiveMax + negativeMax;
+  const scale = plotH / totalRange;
+  const baselineY = marginTop + positiveMax * scale;
+
+  const svg = document.createElementNS(SVG_NS, 'svg');
+  svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+  svg.setAttribute('class', 'chart');
+  svg.setAttribute('role', 'img');
+  svg.setAttribute('aria-label', `${title} 그룹 막대 차트`);
+
+  // gridlines
+  const ticks = negativeMax > 0
+    ? [positiveMax, positiveMax / 2, 0, -negativeMax]
+    : [positiveMax, positiveMax / 2, 0];
+  ticks.forEach(t => {
+    const y = baselineY - t * scale;
+    const line = document.createElementNS(SVG_NS, 'line');
+    line.setAttribute('x1', marginLeft);
+    line.setAttribute('x2', W - marginRight);
+    line.setAttribute('y1', y);
+    line.setAttribute('y2', y);
+    line.setAttribute('class', t === 0 ? 'baseline' : 'gridline');
+    svg.appendChild(line);
+
+    const label = document.createElementNS(SVG_NS, 'text');
+    label.setAttribute('x', marginLeft - 6);
+    label.setAttribute('y', y + 3);
+    label.setAttribute('text-anchor', 'end');
+    label.setAttribute('class', 'axis-label');
+    label.textContent = axisFormatter(t);
+    svg.appendChild(label);
+  });
+
+  // bars
+  const n = companies.length;
+  const groupWidth = plotW / years.length;
+  const barWidth = Math.max(4, Math.min(22, (groupWidth - (n - 1) * 2) / n));
+  const barsTotalWidth = n * barWidth + (n - 1) * 2;
+
+  years.forEach((year, yi) => {
+    const groupX = marginLeft + yi * groupWidth;
+    const startX = groupX + (groupWidth - barsTotalWidth) / 2;
+
+    const yearLabel = document.createElementNS(SVG_NS, 'text');
+    yearLabel.setAttribute('x', groupX + groupWidth / 2);
+    yearLabel.setAttribute('y', H - 6);
+    yearLabel.setAttribute('text-anchor', 'middle');
+    yearLabel.setAttribute('class', 'axis-label');
+    yearLabel.textContent = year;
+    svg.appendChild(yearLabel);
+
+    companies.forEach((c, ci) => {
+      const value = getValue(ci, year);
+      const x = startX + ci * (barWidth + 2);
+
+      const hit = document.createElementNS(SVG_NS, 'g');
+      hit.setAttribute('class', 'bar-hit-area');
+      hit.setAttribute('tabindex', '0');
+      hit.setAttribute('role', 'img');
+      const tipText = value === null || value === undefined
+        ? `${year} · ${c.name}: 데이터 없음`
+        : `${year} · ${c.name}: ${tooltipFormatter(value)}`;
+      hit.setAttribute('aria-label', tipText);
+
+      const hitRect = document.createElementNS(SVG_NS, 'rect');
+      hitRect.setAttribute('x', x - 1);
+      hitRect.setAttribute('y', marginTop);
+      hitRect.setAttribute('width', barWidth + 2);
+      hitRect.setAttribute('height', plotH);
+      hitRect.setAttribute('fill', 'transparent');
+      hit.appendChild(hitRect);
+
+      if (value !== null && value !== undefined && value !== 0) {
+        const barH = Math.max(Math.abs(value) * scale, 2);
+        const positive = value >= 0;
+        const barY = positive ? baselineY - barH : baselineY;
+
+        const rect = document.createElementNS(SVG_NS, 'rect');
+        rect.setAttribute('x', x);
+        rect.setAttribute('y', barY);
+        rect.setAttribute('width', barWidth);
+        rect.setAttribute('height', barH);
+        rect.setAttribute('rx', 4);
+        rect.setAttribute('ry', 4);
+        rect.setAttribute('class', `bar-fill series-${ci}`);
+        hit.appendChild(rect);
+
+        const squareH = Math.min(4, barH);
+        const squareRect = document.createElementNS(SVG_NS, 'rect');
+        squareRect.setAttribute('x', x);
+        squareRect.setAttribute('y', positive ? baselineY - squareH : baselineY);
+        squareRect.setAttribute('width', barWidth);
+        squareRect.setAttribute('height', squareH);
+        squareRect.setAttribute('class', `bar-fill series-${ci}`);
+        hit.appendChild(squareRect);
+      }
+
+      hit.addEventListener('mouseenter', () => showTooltip(hitRect, `<strong>${tooltipFormatter(value)}</strong><br>${year} · ${escapeHtml(c.name)}`));
+      hit.addEventListener('mouseleave', hideTooltip);
+      hit.addEventListener('focus', () => showTooltip(hitRect, `<strong>${tooltipFormatter(value)}</strong><br>${year} · ${escapeHtml(c.name)}`));
+      hit.addEventListener('blur', hideTooltip);
+
+      svg.appendChild(hit);
+    });
+  });
+
+  const card = document.createElement('div');
+  card.className = 'chart-card';
+  const h4 = document.createElement('h4');
+  h4.textContent = title;
+  card.appendChild(h4);
+  card.appendChild(svg);
+  return card;
+}
+
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+/* ---------- 결과 렌더링 ---------- */
+
+function renderResults(data) {
+  const companies = data.companies;
+  const years = [...data.years].sort((a, b) => a - b);
+
+  buildLegend(companies);
+
+  buildTable(
+    document.getElementById('accounts-table'),
+    companies, years, ACCOUNTS,
+    (ci, c, y, account) => (c.years[y] || {}).accounts?.[account] ?? null,
+    formatWon
+  );
+
+  buildTable(
+    document.getElementById('ratio-table'),
+    companies, years, RATIOS,
+    (ci, c, y, ratio) => (c.years[y] || {}).ratios?.[ratio] ?? null,
+    v => v === null ? '-' : formatPercent(v)
+  );
+
+  const profitContainer = document.getElementById('charts-profit');
+  profitContainer.innerHTML = '';
+  ['매출액', '영업이익', '당기순이익'].forEach(account => {
+    profitContainer.appendChild(createBarChart({
+      title: account,
+      years, companies,
+      getValue: (ci, y) => (companies[ci].years[y] || {}).accounts?.[account] ?? null,
+      axisFormatter: formatWonAxis,
+      tooltipFormatter: formatWon,
+    }));
+  });
+
+  const ratioContainer = document.getElementById('charts-ratio');
+  ratioContainer.innerHTML = '';
+  RATIOS.forEach(ratio => {
+    ratioContainer.appendChild(createBarChart({
+      title: ratio.replace('(%)', ''),
+      years, companies,
+      getValue: (ci, y) => (companies[ci].years[y] || {}).ratios?.[ratio] ?? null,
+      axisFormatter: v => `${v}%`,
+      tooltipFormatter: formatPercent,
+    }));
+  });
+
+  resultsEl.classList.add('visible');
+  resultsEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+/* ---------- 제출 / 내보내기 ---------- */
+
 document.getElementById('compare-form').addEventListener('submit', async (e) => {
   e.preventDefault();
 
@@ -226,6 +680,7 @@ document.getElementById('compare-form').addEventListener('submit', async (e) => 
 
   submitBtn.disabled = true;
   setStatus('DART에서 재무데이터를 조회하는 중입니다...', 'info');
+  exportStatusEl.textContent = '';
 
   try {
     const resp = await fetch('/api/compare', {
@@ -237,6 +692,33 @@ document.getElementById('compare-form').addEventListener('submit', async (e) => 
       }),
     });
 
+    const data = await resp.json();
+    if (!resp.ok) throw new Error(data.error || `요청 실패 (${resp.status})`);
+
+    lastResult = data;
+    renderResults(data);
+    setStatus('완료!', 'info');
+  } catch (err) {
+    setStatus(err.message || '오류가 발생했습니다.', 'error');
+  } finally {
+    submitBtn.disabled = false;
+  }
+});
+
+exportBtn.addEventListener('click', async () => {
+  if (!lastResult) return;
+
+  exportBtn.disabled = true;
+  exportStatusEl.textContent = '엑셀 파일을 만드는 중입니다...';
+  exportStatusEl.className = 'status info';
+
+  try {
+    const resp = await fetch('/api/export', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(lastResult),
+    });
+
     if (!resp.ok) {
       const err = await resp.json().catch(() => ({}));
       throw new Error(err.error || `요청 실패 (${resp.status})`);
@@ -246,17 +728,18 @@ document.getElementById('compare-form').addEventListener('submit', async (e) => 
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `재무비교_${companies.map(c => c.corp_name).join('_')}.xlsx`;
+    a.download = `재무비교_${lastResult.companies.map(c => c.name).join('_')}.xlsx`;
     document.body.appendChild(a);
     a.click();
     a.remove();
     URL.revokeObjectURL(url);
 
-    setStatus('완료! 다운로드가 시작됩니다.', 'info');
+    exportStatusEl.textContent = '다운로드가 시작됩니다.';
   } catch (err) {
-    setStatus(err.message || '오류가 발생했습니다.', 'error');
+    exportStatusEl.textContent = err.message || '오류가 발생했습니다.';
+    exportStatusEl.className = 'status error';
   } finally {
-    submitBtn.disabled = false;
+    exportBtn.disabled = false;
   }
 });
 </script>

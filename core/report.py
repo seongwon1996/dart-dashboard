@@ -2,9 +2,17 @@
 from __future__ import annotations
 
 from openpyxl import Workbook
-from openpyxl.styles import Font
+from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.utils import get_column_letter
 from openpyxl.worksheet.worksheet import Worksheet
+
+HEADER_FILL = PatternFill(start_color="1F3864", end_color="1F3864", fill_type="solid")
+HEADER_FONT = Font(bold=True, color="FFFFFF")
+HEADER_BORDER = Border(bottom=Side(style="thin", color="0B1E3F"))
+LABEL_FONT = Font(bold=True)
+AMOUNT_FORMAT = "#,##0.0"
+PERCENT_FORMAT = '0.00"%"'
+RAW_AMOUNT_FORMAT = "#,##0"
 
 # 비교에 사용할 표준 계정 (fnlttSinglAcnt.json 기준)
 TARGET_ACCOUNTS = [
@@ -63,12 +71,27 @@ def compute_ratios(accounts: dict[str, float | None]) -> dict[str, float | None]
 def _autosize_columns(ws: Worksheet) -> None:
     for col_cells in ws.columns:
         length = max((len(str(c.value)) if c.value is not None else 0) for c in col_cells)
-        ws.column_dimensions[get_column_letter(col_cells[0].column)].width = length + 3
+        ws.column_dimensions[get_column_letter(col_cells[0].column)].width = max(length + 3, 10)
 
 
-def _bold_header(ws: Worksheet) -> None:
+def _style_header(ws: Worksheet) -> None:
     for cell in ws[1]:
-        cell.font = Font(bold=True)
+        cell.font = HEADER_FONT
+        cell.fill = HEADER_FILL
+        cell.border = HEADER_BORDER
+        cell.alignment = Alignment(horizontal="center", vertical="center")
+    ws.row_dimensions[1].height = 20
+    ws.freeze_panes = "B2"
+    ws.auto_filter.ref = ws.dimensions
+
+
+def _style_data_rows(ws: Worksheet, number_format: str) -> None:
+    for row in ws.iter_rows(min_row=2):
+        row[0].font = LABEL_FONT
+        row[0].alignment = Alignment(horizontal="left")
+        for cell in row[1:]:
+            cell.number_format = number_format
+            cell.alignment = Alignment(horizontal="right")
 
 
 def build_workbook(companies: list[dict], years: list[int]) -> Workbook:
@@ -89,7 +112,8 @@ def build_workbook(companies: list[dict], years: list[int]) -> Workbook:
                 amount = c["years"].get(y, {}).get("accounts", {}).get(account)
                 row.append(round(amount / 1e8, 1) if amount is not None else None)
         ws1.append(row)
-    _bold_header(ws1)
+    _style_header(ws1)
+    _style_data_rows(ws1, AMOUNT_FORMAT)
     _autosize_columns(ws1)
 
     # 2) 재무비율: 행=회사, 열=연도_지표
@@ -103,7 +127,8 @@ def build_workbook(companies: list[dict], years: list[int]) -> Workbook:
             for r in RATIO_NAMES:
                 row.append(ratios.get(r))
         ws2.append(row)
-    _bold_header(ws2)
+    _style_header(ws2)
+    _style_data_rows(ws2, PERCENT_FORMAT)
     _autosize_columns(ws2)
 
     # 3) 원본데이터: long format
@@ -117,7 +142,11 @@ def build_workbook(companies: list[dict], years: list[int]) -> Workbook:
             fs_div = year_data.get("fs_div")
             for account, amount in year_data.get("accounts", {}).items():
                 ws3.append([c["name"], y, account, amount, fs_div])
-    _bold_header(ws3)
+    _style_header(ws3)
+    for row in ws3.iter_rows(min_row=2):
+        row[0].font = LABEL_FONT
+        row[3].number_format = RAW_AMOUNT_FORMAT
+        row[3].alignment = Alignment(horizontal="right")
     _autosize_columns(ws3)
 
     return wb

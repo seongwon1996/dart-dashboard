@@ -2,6 +2,9 @@
   "functions": {
     "api/compare.py": {
       "maxDuration": 30
+    },
+    "api/export.py": {
+      "maxDuration": 15
     }
   }
 }

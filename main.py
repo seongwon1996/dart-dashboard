@@ -12,7 +12,8 @@ import sys
 from pathlib import Path
 
 import core.dart_api as dc
-from core.report import build_workbook, compute_ratios, extract_key_accounts
+from core.report import build_workbook
+from core.service import collect_company_data
 
 OUTPUT_DIR = Path(__file__).parent / "output"
 
@@ -39,20 +40,6 @@ def resolve_company(name: str, corp_list: list[dict]) -> dc.CompanyMatch:
     for m in matches[:15]:
         print(f"  - {m.corp_name} (종목코드: {m.stock_code or '비상장'})")
     raise SystemExit(1)
-
-
-def collect_company_data(api_key: str, company: dc.CompanyMatch, years: list[int]) -> dict:
-    """회사 1곳의 연도별 데이터를 build_workbook이 기대하는 구조로 반환."""
-    years_data = {}
-    for year in years:
-        rows, fs_div = dc.fetch_main_accounts(api_key, company.corp_code, year)
-        if not rows:
-            print(f"  [경고] {company.corp_name} {year}년 재무데이터 없음")
-            continue
-        accounts = extract_key_accounts(rows)
-        ratios = compute_ratios(accounts)
-        years_data[year] = {"accounts": accounts, "ratios": ratios, "fs_div": fs_div}
-    return {"name": company.corp_name, "years": years_data}
 
 
 def main():
@@ -84,7 +71,10 @@ def main():
     company_data = []
     for company in companies:
         print(f"\n{company.corp_name} 재무데이터 조회 중...")
-        company_data.append(collect_company_data(api_key, company, years))
+        data = collect_company_data(api_key, company.corp_code, company.corp_name, years)
+        if not data["years"]:
+            print(f"  [경고] {company.corp_name} 재무데이터 없음")
+        company_data.append(data)
 
     if not any(cd["years"] for cd in company_data):
         raise SystemExit("조회된 재무데이터가 없습니다.")
