@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>재무제표 비교 - DART Dashboard</title>
+<style>
+  :root {
+    color-scheme: light dark;
+    --bg: #f7f7f8;
+    --card: #ffffff;
+    --border: #e2e2e6;
+    --text: #1a1a1e;
+    --muted: #6b6b73;
+    --accent: #2563eb;
+    --accent-hover: #1d4ed8;
+    --error: #dc2626;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #16161a;
+      --card: #1f1f24;
+      --border: #33333a;
+      --text: #f2f2f3;
+      --muted: #9a9aa2;
+      --accent: #3b82f6;
+      --accent-hover: #60a5fa;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Malgun Gothic", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    display: flex;
+    justify-content: center;
+    padding: 40px 16px;
+  }
+  .card {
+    width: 100%;
+    max-width: 640px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 32px;
+  }
+  h1 { font-size: 1.4rem; margin: 0 0 4px; }
+  p.subtitle { color: var(--muted); margin: 0 0 28px; font-size: 0.9rem; }
+  .field-group { margin-bottom: 20px; }
+  label { display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 6px; }
+  .company-row { position: relative; margin-bottom: 12px; }
+  input[type="text"], input[type="number"] {
+    width: 100%;
+    padding: 10px 12px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    color: var(--text);
+    font-size: 0.95rem;
+  }
+  input:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+  .years-row { display: flex; gap: 10px; }
+  .years-row input { width: 90px; flex: none; }
+  .dropdown {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    max-height: 220px;
+    overflow-y: auto;
+    z-index: 10;
+    display: none;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+  }
+  .dropdown.open { display: block; }
+  .dropdown-item {
+    padding: 8px 12px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    display: flex;
+    justify-content: space-between;
+  }
+  .dropdown-item .code { color: var(--muted); font-size: 0.78rem; }
+  .dropdown-item:hover, .dropdown-item.active { background: var(--bg); }
+  button {
+    width: 100%;
+    padding: 12px;
+    border: none;
+    border-radius: 8px;
+    background: var(--accent);
+    color: #fff;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: 8px;
+  }
+  button:hover { background: var(--accent-hover); }
+  button:disabled { opacity: 0.6; cursor: not-allowed; }
+  .status { margin-top: 14px; font-size: 0.88rem; min-height: 1.2em; }
+  .status.error { color: var(--error); }
+  .status.info { color: var(--muted); }
+  .hint { font-size: 0.78rem; color: var(--muted); margin-top: 4px; }
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>재무제표 비교</h1>
+  <p class="subtitle">국내 상장사 2~5곳을 검색해 최근 재무제표를 비교하고 엑셀로 받아보세요. (DART 전자공시 기준)</p>
+
+  <form id="compare-form">
+    <div class="field-group">
+      <label>비교할 회사</label>
+      <div id="company-inputs"></div>
+    </div>
+
+    <div class="field-group">
+      <label>비교 연도</label>
+      <div class="years-row" id="years-row"></div>
+      <div class="hint">사업보고서 제출 시점(익년 3월 말) 기준으로 최근 완결된 3개년이 기본값입니다.</div>
+    </div>
+
+    <button type="submit" id="submit-btn">엑셀 다운로드</button>
+    <div class="status" id="status"></div>
+  </form>
+</div>
+
+<script>
+const COMPANY_COUNT = 3;
+const companiesContainer = document.getElementById('company-inputs');
+const yearsRow = document.getElementById('years-row');
+const statusEl = document.getElementById('status');
+const submitBtn = document.getElementById('submit-btn');
+
+let corpList = [];
+const selected = new Array(COMPANY_COUNT).fill(null);
+
+function defaultYears() {
+  const today = new Date();
+  const latest = today.getMonth() >= 3 ? today.getFullYear() - 1 : today.getFullYear() - 2;
+  return [latest, latest - 1, latest - 2];
+}
+
+function buildCompanyRow(index) {
+  const row = document.createElement('div');
+  row.className = 'company-row';
+
+  const input = document.createElement('input');
+  input.type = 'text';
+  input.placeholder = `회사 ${index + 1} (예: 삼성전자)`;
+  input.autocomplete = 'off';
+
+  const dropdown = document.createElement('div');
+  dropdown.className = 'dropdown';
+
+  input.addEventListener('input', () => {
+    selected[index] = null;
+    const q = input.value.trim();
+    if (!q) { dropdown.classList.remove('open'); return; }
+    const matches = corpList.filter(c => c.corp_name.includes(q)).slice(0, 8);
+    dropdown.innerHTML = '';
+    matches.forEach(m => {
+      const item = document.createElement('div');
+      item.className = 'dropdown-item';
+      item.innerHTML = `<span>${m.corp_name}</span><span class="code">${m.stock_code}</span>`;
+      item.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        input.value = m.corp_name;
+        selected[index] = m;
+        dropdown.classList.remove('open');
+      });
+      dropdown.appendChild(item);
+    });
+    dropdown.classList.toggle('open', matches.length > 0);
+  });
+
+  input.addEventListener('blur', () => {
+    setTimeout(() => dropdown.classList.remove('open'), 100);
+  });
+
+  row.appendChild(input);
+  row.appendChild(dropdown);
+  return row;
+}
+
+for (let i = 0; i < COMPANY_COUNT; i++) {
+  companiesContainer.appendChild(buildCompanyRow(i));
+}
+
+defaultYears().forEach(y => {
+  const input = document.createElement('input');
+  input.type = 'number';
+  input.value = y;
+  input.min = '2015';
+  input.max = String(new Date().getFullYear());
+  yearsRow.appendChild(input);
+});
+
+function setStatus(message, type) {
+  statusEl.textContent = message || '';
+  statusEl.className = 'status' + (type ? ' ' + type : '');
+}
+
+fetch('/data/corp_codes.json')
+  .then(r => r.json())
+  .then(data => { corpList = data; })
+  .catch(() => setStatus('회사 목록을 불러오지 못했습니다. 새로고침해주세요.', 'error'));
+
+document.getElementById('compare-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+
+  const companies = selected.filter(Boolean);
+  if (companies.length < 2) {
+    setStatus('회사를 최소 2곳, 드롭다운에서 선택해주세요.', 'error');
+    return;
+  }
+
+  const years = Array.from(yearsRow.querySelectorAll('input')).map(i => parseInt(i.value, 10));
+  if (years.some(isNaN)) {
+    setStatus('연도를 올바르게 입력해주세요.', 'error');
+    return;
+  }
+
+  submitBtn.disabled = true;
+  setStatus('DART에서 재무데이터를 조회하는 중입니다...', 'info');
+
+  try {
+    const resp = await fetch('/api/compare', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        companies: companies.map(c => ({ corp_code: c.corp_code, corp_name: c.corp_name })),
+        years,
+      }),
+    });
+
+    if (!resp.ok) {
+      const err = await resp.json().catch(() => ({}));
+      throw new Error(err.error || `요청 실패 (${resp.status})`);
+    }
+
+    const blob = await resp.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `재무비교_${companies.map(c => c.corp_name).join('_')}.xlsx`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+
+    setStatus('완료! 다운로드가 시작됩니다.', 'info');
+  } catch (err) {
+    setStatus(err.message || '오류가 발생했습니다.', 'error');
+  } finally {
+    submitBtn.disabled = false;
+  }
+});
+</script>
+</body>
+</html>

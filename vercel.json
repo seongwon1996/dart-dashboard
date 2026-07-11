@@ -1,0 +1,7 @@
+{
+  "functions": {
+    "api/compare.py": {
+      "maxDuration": 30
+    }
+  }
+}

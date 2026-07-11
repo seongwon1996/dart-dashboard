@@ -1,0 +1,7 @@
+.cache/
+output/
+dart_api_key.txt
+__pycache__/
+*.pyc
+.claude/
+.vercel/
